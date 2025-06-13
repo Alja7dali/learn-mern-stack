@@ -1,21 +1,27 @@
 // logger.js
-import { createLogger, format, transports } from 'winston';
-const { combine, timestamp, printf, colorize } = format;
+import winston from 'winston';
 
-const formatter = printf(({ level, message, timestamp }) => {
-  return `[${timestamp}] ${level}: ${message}`;
-});
-
-const logger = createLogger({
+const logger = winston.createLogger({
   level: 'info',
-  format: combine(
-    timestamp(),
-    formatter
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
   ),
   transports: [
-    new transports.Console({ format: combine(colorize(), formatter) }),
-    new transports.File({ filename: 'logs/app.log' })
-  ]
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+  ],
 });
+
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      ),
+    })
+  );
+}
 
 export default logger;

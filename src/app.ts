@@ -5,6 +5,9 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import logger from './utils/logger';
 import { dev, port } from './utils/helpers';
+import listRoutes from './routes/list.routes';
+import itemRoutes from './routes/item.routes';
+import { OK, INTERNAL_SERVER_ERROR } from './utils/http-status';
 
 // Load environment variables
 dotenv.config();
@@ -14,7 +17,7 @@ const app: Express = express();
 // Middleware
 app.use(cors());
 app.use(helmet());
-app.use(morgan('combined', {
+app.use(morgan('tiny', {
   stream: {
     write: (message) => logger.info(message.trim())
   }
@@ -22,20 +25,27 @@ app.use(morgan('combined', {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Basic error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  logger.error('Error route hit');
-  res.status(500).json({
-    message: 'Something went wrong!',
-    error: dev ? err.message : undefined
-  });
-});
+// Routes
+app.use('/api/lists', listRoutes);
+app.use('/api/lists/:listId/items', itemRoutes);
 
 // Basic route
 app.get('/', (req: Request, res: Response) => {
   res
-    .status(200)
-    .json({ message: 'Hello, World!' });
+    .status(OK)
+    .json({ message: 'List & Items API - Welcome!' });
+});
+
+// Basic error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  logger.error('Error:', err.message);
+  res
+    .status(INTERNAL_SERVER_ERROR)
+    .json({
+      success: false,
+      message: 'Something went wrong!',
+      error: dev ? err.message : undefined
+    });
 });
 
 // Start server
