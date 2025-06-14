@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { itemStore } from '../store/item.store';
-import { listStore } from '../store/list.store';
+import List from '../models/list.model';
+import Item from '../models/item.model';
 import { OK, CREATED, BAD_REQUEST, NOT_FOUND } from '../utils/http-status';
 
 export const createItem = async (req: Request, res: Response): Promise<void> => {
@@ -16,7 +16,7 @@ export const createItem = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const list = listStore.findById(listId);
+    const list = await List.findById(listId);
     if (!list) {
       res.status(NOT_FOUND).json({
         success: false,
@@ -25,7 +25,7 @@ export const createItem = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const item = itemStore.create({ listId, title, description, completed });
+    const item = await Item.create({ listId, title, description, completed });
     res.status(CREATED).json({
       success: true,
       data: item,
@@ -41,7 +41,7 @@ export const createItem = async (req: Request, res: Response): Promise<void> => 
 export const getListItems = async (req: Request, res: Response): Promise<void> => {
   try {
     const { listId } = req.params;
-    const list = listStore.findById(listId);
+    const list = await List.findById(listId);
     if (!list) {
       res.status(NOT_FOUND).json({
         success: false,
@@ -50,7 +50,7 @@ export const getListItems = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const items = itemStore.findByListId(listId);
+    const items = await Item.find({ listId }).sort({ createdAt: -1 });
     res.status(OK).json({
       success: true,
       data: items,
@@ -66,7 +66,7 @@ export const getListItems = async (req: Request, res: Response): Promise<void> =
 export const getItem = async (req: Request, res: Response): Promise<void> => {
   try {
     const { listId, id } = req.params;
-    const list = listStore.findById(listId);
+    const list = await List.findById(listId);
     if (!list) {
       res.status(NOT_FOUND).json({
         success: false,
@@ -75,8 +75,8 @@ export const getItem = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const item = itemStore.findById(id);
-    if (!item || item.listId !== listId) {
+    const item = await Item.findOne({ _id: id, listId });
+    if (!item) {
       res.status(NOT_FOUND).json({
         success: false,
         error: 'Item not found in this list',
@@ -99,7 +99,7 @@ export const getItem = async (req: Request, res: Response): Promise<void> => {
 export const updateItem = async (req: Request, res: Response): Promise<void> => {
   try {
     const { listId, id } = req.params;
-    const list = listStore.findById(listId);
+    const list = await List.findById(listId);
     if (!list) {
       res.status(NOT_FOUND).json({
         success: false,
@@ -108,8 +108,13 @@ export const updateItem = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const existingItem = itemStore.findById(id);
-    if (!existingItem || existingItem.listId !== listId) {
+    const item = await Item.findOneAndUpdate(
+      { _id: id, listId },
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+
+    if (!item) {
       res.status(NOT_FOUND).json({
         success: false,
         error: 'Item not found in this list',
@@ -117,7 +122,6 @@ export const updateItem = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const item = itemStore.update(id, req.body);
     res.status(OK).json({
       success: true,
       data: item,
@@ -133,7 +137,7 @@ export const updateItem = async (req: Request, res: Response): Promise<void> => 
 export const deleteItem = async (req: Request, res: Response): Promise<void> => {
   try {
     const { listId, id } = req.params;
-    const list = listStore.findById(listId);
+    const list = await List.findById(listId);
     if (!list) {
       res.status(NOT_FOUND).json({
         success: false,
@@ -142,8 +146,8 @@ export const deleteItem = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const existingItem = itemStore.findById(id);
-    if (!existingItem || existingItem.listId !== listId) {
+    const item = await Item.findOneAndDelete({ _id: id, listId });
+    if (!item) {
       res.status(NOT_FOUND).json({
         success: false,
         error: 'Item not found in this list',
@@ -151,7 +155,6 @@ export const deleteItem = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    itemStore.delete(id);
     res.status(OK).json({
       success: true,
       data: {},

@@ -7,10 +7,18 @@ import logger from './utils/logger';
 import { dev, port } from './utils/helpers';
 import listRoutes from './routes/list.routes';
 import itemRoutes from './routes/item.routes';
+import healthRoutes from './routes/health.routes';
 import { OK, INTERNAL_SERVER_ERROR } from './utils/http-status';
+import { connectDB, deleteAllCollections } from './config/database';
 
 // Load environment variables
 dotenv.config();
+
+// Delete all collections
+deleteAllCollections();
+
+// Connect to MongoDB
+connectDB();
 
 const app: Express = express();
 
@@ -28,6 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/lists', listRoutes);
 app.use('/api/lists/:listId/items', itemRoutes);
+app.use('/api/health', healthRoutes);
 
 // Basic route
 app.get('/', (req: Request, res: Response) => {

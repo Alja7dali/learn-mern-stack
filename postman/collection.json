@@ -1,11 +1,28 @@
 {
 	"info": {
 		"_postman_id": "random-uuid",
-		"name": "02-REST",
+		"name": "03-CRUD",
 		"description": "REST API collection for the Todo application",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Check DB Health",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3000/api/health/db",
+							"host": ["http://localhost:3000"],
+							"path": ["api", "health", "db"]
+						},
+						"description": "Check the health status of the database connection"
+					}
+				}
+			]
+		},
 		{
 			"name": "Lists",
 			"item": [
