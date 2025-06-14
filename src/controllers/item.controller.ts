@@ -1,168 +1,86 @@
-import { Request, Response } from 'express';
-import List from '../models/list.model';
-import Item from '../models/item.model';
-import { OK, CREATED, BAD_REQUEST, NOT_FOUND } from '../utils/http-status';
+import { Request, Response, NextFunction } from 'express';
+import * as ItemService from '../services/item.service';
 
-export const createItem = async (req: Request, res: Response): Promise<void> => {
+const createItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { listId } = req.params;
     const { title, description = '', completed = false } = req.body;
 
-    if (!title) {
-      res.status(BAD_REQUEST).json({
-        success: false,
-        error: 'Title is required',
-      });
-      return;
-    }
+    const item = await ItemService.createItem(listId, {
+      title,
+      description,
+      completed,
+    });
 
-    const list = await List.findById(listId);
-    if (!list) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'List not found',
-      });
-      return;
-    }
-
-    const item = await Item.create({ listId, title, description, completed });
-    res.status(CREATED).json({
-      success: true,
+    res.status(201).json({
+      status: 'success',
       data: item,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create item',
-    });
+    next(error);
   }
 };
 
-export const getListItems = async (req: Request, res: Response): Promise<void> => {
+const getListItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { listId } = req.params;
-    const list = await List.findById(listId);
-    if (!list) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'List not found',
-      });
-      return;
-    }
+    const items = await ItemService.getListItems(listId);
 
-    const items = await Item.find({ listId }).sort({ createdAt: -1 });
-    res.status(OK).json({
-      success: true,
+    res.status(200).json({
+      status: 'success',
       data: items,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch items',
-    });
+    next(error);
   }
 };
 
-export const getItem = async (req: Request, res: Response): Promise<void> => {
+const getItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { listId, id } = req.params;
-    const list = await List.findById(listId);
-    if (!list) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'List not found',
-      });
-      return;
-    }
+    const item = await ItemService.getItem(listId, id);
 
-    const item = await Item.findOne({ _id: id, listId });
-    if (!item) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'Item not found in this list',
-      });
-      return;
-    }
-
-    res.status(OK).json({
-      success: true,
+    res.status(200).json({
+      status: 'success',
       data: item,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch item',
-    });
+    next(error);
   }
 };
 
-export const updateItem = async (req: Request, res: Response): Promise<void> => {
+const updateItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { listId, id } = req.params;
-    const list = await List.findById(listId);
-    if (!list) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'List not found',
-      });
-      return;
-    }
+    const item = await ItemService.updateItem(listId, id, req.body);
 
-    const item = await Item.findOneAndUpdate(
-      { _id: id, listId },
-      { $set: req.body },
-      { new: true, runValidators: true }
-    );
-
-    if (!item) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'Item not found in this list',
-      });
-      return;
-    }
-
-    res.status(OK).json({
-      success: true,
+    res.status(200).json({
+      status: 'success',
       data: item,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update item',
-    });
+    next(error);
   }
 };
 
-export const deleteItem = async (req: Request, res: Response): Promise<void> => {
+const deleteItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { listId, id } = req.params;
-    const list = await List.findById(listId);
-    if (!list) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'List not found',
-      });
-      return;
-    }
+    await ItemService.deleteItem(listId, id);
 
-    const item = await Item.findOneAndDelete({ _id: id, listId });
-    if (!item) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'Item not found in this list',
-      });
-      return;
-    }
-
-    res.status(OK).json({
-      success: true,
-      data: {},
+    res.status(200).json({
+      status: 'success',
+      data: null,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete item',
-    });
+    next(error);
   }
-}; 
+}
+
+export {
+  createItem,
+  getListItems,
+  getItem,
+  updateItem,
+  deleteItem
+};

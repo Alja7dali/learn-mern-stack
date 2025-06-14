@@ -1,125 +1,82 @@
-import { Request, Response } from 'express';
-import List from '../models/list.model';
-import Item from '../models/item.model';
-import { OK, CREATED, BAD_REQUEST, NOT_FOUND } from '../utils/http-status';
+import { Request, Response, NextFunction } from 'express';
+import * as ListService from '../services/list.service';
+import { AuthRequest } from '../middleware/auth.middleware';
+import { CREATED, OK } from '../utils/http-status';
 
-export const createList = async (req: Request, res: Response): Promise<void> => {
+const createList = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { title, description = '' } = req.body;
+    const list = await ListService.createList({ 
+      title, 
+      description,
+      userId: req.user.id 
+    });
 
-    if (!title) {
-      res.status(BAD_REQUEST).json({
-        success: false,
-        error: 'Title is required',
-      });
-      return;
-    }
-
-    const list = await List.create({ title, description });
     res.status(CREATED).json({
-      success: true,
+      status: 'success',
       data: list,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create list',
-    });
+    next(error);
   }
 };
 
-export const getLists = async (_req: Request, res: Response): Promise<void> => {
+const getLists = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const lists = await List.find().sort({ createdAt: -1 });
+    const lists = await ListService.getLists(req.user.id);
+
     res.status(OK).json({
-      success: true,
+      status: 'success',
       data: lists,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch lists',
-    });
+    next(error);
   }
 };
 
-export const getList = async (req: Request, res: Response): Promise<void> => {
+const getList = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const list = await List.findById(req.params.id);
-    if (!list) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'List not found',
-      });
-      return;
-    }
-
-    const items = await Item.find({ listId: list._id }).sort({ createdAt: -1 });
-    res.status(OK).json({
-      success: true,
-      data: {
-        ...list.toObject(),
-        items,
-      },
-    });
-  } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch list',
-    });
-  }
-};
-
-export const updateList = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const list = await List.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    );
-
-    if (!list) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'List not found',
-      });
-      return;
-    }
+    const list = await ListService.getList(req.params.id, req.user.id);
 
     res.status(OK).json({
-      success: true,
+      status: 'success',
       data: list,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update list',
-    });
+    next(error);
   }
 };
 
-export const deleteList = async (req: Request, res: Response): Promise<void> => {
+const updateList = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const list = await List.findByIdAndDelete(req.params.id);
-    if (!list) {
-      res.status(NOT_FOUND).json({
-        success: false,
-        error: 'List not found',
-      });
-      return;
-    }
-
-    // Delete all items in the list
-    await Item.deleteMany({ listId: list._id });
+    const list = await ListService.updateList(req.params.id, req.body, req.user.id);
 
     res.status(OK).json({
-      success: true,
-      data: {},
+      status: 'success',
+      data: list,
     });
   } catch (error) {
-    res.status(BAD_REQUEST).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete list',
-    });
+    next(error);
   }
-}; 
+};
+
+const deleteList = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    await ListService.deleteList(req.params.id, req.user.id);
+
+    res.status(OK).json({
+      status: 'success',
+      data: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export {
+  createList,
+  getLists,
+  getList,
+  updateList,
+  deleteList
+};

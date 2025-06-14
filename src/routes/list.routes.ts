@@ -1,20 +1,19 @@
 import { Router } from 'express';
-import {
-  createList,
-  getLists,
-  getList,
-  updateList,
-  deleteList,
-} from '../controllers/list.controller';
+import * as ListController from '../controllers/list.controller';
+import { authorized } from '../middleware/auth.middleware';
 
 const router = Router();
 
+// Authorized routes
+router.use(authorized);
+
 router.route('/')
-  .get(getLists)
-  .post(createList);
+  .post(ListController.createList)
+  .get(ListController.getLists);
+
 router.route('/:id')
-  .get(getList)
-  .put(updateList)
-  .delete(deleteList);
+  .get(ListController.getList)
+  .patch(ListController.updateList)
+  .delete(ListController.deleteList);
 
 export default router; 

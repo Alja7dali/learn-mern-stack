@@ -3,19 +3,22 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import logger from './utils/logger';
 import { dev, port } from './utils/helpers';
 import listRoutes from './routes/list.routes';
 import itemRoutes from './routes/item.routes';
 import healthRoutes from './routes/health.routes';
+import authRoutes from './routes/auth.routes';
 import { OK, INTERNAL_SERVER_ERROR } from './utils/http-status';
 import { connectDB, deleteAllCollections } from './config/database';
+import { AppError } from './utils/error';
 
 // Load environment variables
 dotenv.config();
 
-// Delete all collections
-deleteAllCollections();
+// // Delete all collections
+// deleteAllCollections();
 
 // Connect to MongoDB
 connectDB();
@@ -23,7 +26,10 @@ connectDB();
 const app: Express = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(helmet());
 app.use(morgan('tiny', {
   stream: {
@@ -32,8 +38,10 @@ app.use(morgan('tiny', {
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/lists', listRoutes);
 app.use('/api/lists/:listId/items', itemRoutes);
 app.use('/api/health', healthRoutes);
@@ -45,16 +53,24 @@ app.get('/', (req: Request, res: Response) => {
     .json({ message: 'List & Items API - Welcome!' });
 });
 
-// Basic error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+// Error handling middleware
+app.use((err: Error | AppError, req: Request, res: Response, next: NextFunction): void => {
   logger.error('Error:', err.message);
-  res
-    .status(INTERNAL_SERVER_ERROR)
-    .json({
-      success: false,
-      message: 'Something went wrong!',
-      error: dev ? err.message : undefined
+
+  if (err instanceof AppError) {
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
+      ...(dev && { stack: err.stack })
     });
+    return;
+  }
+
+  res.status(INTERNAL_SERVER_ERROR).json({
+    status: 'error', 
+    message: 'Something went wrong!',
+    ...(dev && { error: err.message, stack: err.stack })
+  });
 });
 
 // Start server

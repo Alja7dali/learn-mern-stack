@@ -1,18 +1,24 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { generateId } from '../utils/generate-id';
 
-export interface List extends Document {
+export interface ListDocument extends Document {
+  userId: string;
   title: string;
   description: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const listSchema = new Schema<List>(
+const listSchema = new Schema<ListDocument>(
   {
-    _id: {
+    id: {
       type: String,
       default: () => `list_${generateId()}`,
+    },
+    userId: {
+      type: String,
+      ref: 'User',
+      required: [true, 'User ID is required'],
     },
     title: {
       type: String,
@@ -27,13 +33,14 @@ const listSchema = new Schema<List>(
   },
   {
     timestamps: true,
-    _id: false,
+    id: false,
     toJSON: {
       virtuals: true,
       versionKey: false,
       transform: function (doc, ret) {
         return {
-          id: ret._id,
+          id: ret.id,
+          userId: ret.userId,
           title: ret.title,
           description: ret.description,
           createdAt: ret.createdAt,
@@ -46,7 +53,8 @@ const listSchema = new Schema<List>(
       versionKey: false,
       transform: function (doc, ret) {
         return {
-          id: ret._id,
+          id: ret.id,
+          userId: ret.userId,
           title: ret.title,
           description: ret.description,
           createdAt: ret.createdAt,
@@ -57,4 +65,4 @@ const listSchema = new Schema<List>(
   }
 );
 
-export default mongoose.model<List>('List', listSchema);
+export const ListsCollection = mongoose.model<ListDocument>('Lists', listSchema);

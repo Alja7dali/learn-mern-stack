@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { generateId } from '../utils/generate-id';
 
-export interface Item extends Document {
+export interface ItemDocument extends Document {
   listId: string;
   title: string;
   description: string;
@@ -10,9 +10,9 @@ export interface Item extends Document {
   updatedAt: Date;
 }
 
-const itemSchema = new Schema<Item>(
+const itemSchema = new Schema<ItemDocument>(
   {
-    _id: {
+    id: {
       type: String,
       default: () => `item_${generateId()}`,
     },
@@ -38,13 +38,13 @@ const itemSchema = new Schema<Item>(
   },
   {
     timestamps: true,
-    _id: false,
+    id: false,
     toJSON: {
       virtuals: true,
       versionKey: false,
       transform: function (doc, ret) {
         return {
-          id: ret._id,
+          id: ret.id,
           listId: ret.listId,
           title: ret.title,
           description: ret.description,
@@ -59,7 +59,7 @@ const itemSchema = new Schema<Item>(
       versionKey: false,
       transform: function (doc, ret) {
         return {
-          id: ret._id,
+          id: ret.id,
           listId: ret.listId,
           title: ret.title,
           description: ret.description,
@@ -72,10 +72,10 @@ const itemSchema = new Schema<Item>(
   }
 );
 
-itemSchema.virtual('completed').get(function (this: Item) {
+itemSchema.virtual('completed').get(function (this: ItemDocument) {
   return this.completedAt !== null;
-}).set(function (this: Item, value: boolean) {
+}).set(function (this: ItemDocument, value: boolean) {
   this.completedAt = value ? new Date() : null;
 });
 
-export default mongoose.model<Item>('Item', itemSchema);
+export const ItemsCollection = mongoose.model<ItemDocument>('Items', itemSchema);
