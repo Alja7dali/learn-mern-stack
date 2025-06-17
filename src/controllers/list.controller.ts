@@ -3,8 +3,11 @@ import { listStore } from '../store/list.store';
 import { itemStore } from '../store/item.store';
 import { OK, CREATED, BAD_REQUEST, NOT_FOUND } from '../utils/http-status';
 
+// handle requests and updaate DB.
+
 export const createList = async (req: Request, res: Response): Promise<void> => {
   try {
+    // destructure the request body to get the title and the description
     const { title, description = '' } = req.body;
 
     if (!title) {

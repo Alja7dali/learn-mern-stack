@@ -9,6 +9,8 @@ import {
 
 const router = Router();
 
+// handle the route for each request method
+
 router.route('/')
   .get(getLists)
   .post(createList);

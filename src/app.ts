@@ -27,7 +27,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/lists', listRoutes);
+// 1) after doning any CRUD operation to lists with this route
+// 2) go to routes folder and check the specifed ROUTE with the specified METHOD.
+// 3) use the right function from the controller ( createList, getLists, getList, updateList, deleteList) for the request.
+// 4) the controller will handle the request and update the fake DB using the right listStore.( create,findAll, findById, update, delete: deleteList).
+
 app.use('/api/lists/:listId/items', itemRoutes);
+// This handles the requests items implimenting similar steps to the lists
 
 // Basic route
 app.get('/', (req: Request, res: Response) => {
