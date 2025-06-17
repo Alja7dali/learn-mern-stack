@@ -12,7 +12,7 @@ const create = (data: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>): Item => {
     createdAt: now,
     updatedAt: now,
   };
-  
+  console.log(`Creating a new item wiith title: ${data.title}`)
   items.set(id, item);
   return item;
 }
